@@ -1,14 +1,15 @@
 const express = require("express")
 const logger = require("morgan")
 
-// GraphQL dependencies
+// GraphQL schema and dependencies
+const schema = require("./schema/schema")
 const graphqlHTTP = require("express-graphql")
 
 // App definition
 const app = express()
 
 // GraphQL endpoints
-app.use("/graphql", graphqlHTTP({}))
+app.use("/graphql", graphqlHTTP({ schema, graphiql: true }))
 
 // Middleware
 app.use(logger("dev"))
@@ -18,7 +19,7 @@ app.use((err, req, res, next) => {
   const error = app.get("end") === "development" ? err : {}
   const status = err.status || 500
 
-  // After that respond to client
+  // After that respond to the client
   res.status(status).json({
     error: {
       message: error.message
