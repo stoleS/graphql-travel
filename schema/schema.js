@@ -1,19 +1,20 @@
 const graphql = require("graphql")
-const _ = require("lodash")
 
 const {
   GraphQLObjectType,
   GraphQLSchema,
   GraphQLString,
   GraphQLID,
-  GraphQLInt
+  GraphQLInt,
+  GraphQLList
 } = graphql
 
 // Dummy data
 let places = [
-  { name: "Beograd", country: "Serbia", id: "1" },
-  { name: "Pariz", country: "Francuska", id: "2" },
-  { name: "London", country: "Engleska", id: "3" }
+  { name: "Beograd", country: "Serbia", id: "1", visitorsId: "2" },
+  { name: "Pariz", country: "Francuska", id: "2", visitorsId: "1" },
+  { name: "London", country: "Engleska", id: "3", visitorsId: "3" },
+  { name: "Madrid", country: "Španija", id: "4", visitorsId: "2" }
 ]
 
 let visitors = [
@@ -28,7 +29,13 @@ const PlaceType = new GraphQLObjectType({
   fields: () => ({
     id: { type: GraphQLID },
     name: { type: GraphQLString },
-    country: { type: GraphQLString }
+    country: { type: GraphQLString },
+    visitors: {
+      type: VisitorType,
+      resolve(parent, args) {
+        return visitors.filter(visitor => visitor.id === parent.visitorsId)
+      }
+    }
   })
 })
 
@@ -38,25 +45,48 @@ const VisitorType = new GraphQLObjectType({
   fields: () => ({
     id: { type: GraphQLID },
     name: { type: GraphQLString },
-    age: { type: GraphQLInt }
+    age: { type: GraphQLInt },
+    places: {
+      type: new GraphQLList(PlaceType),
+      resolve(parent, args) {
+        return places.filter(place => place.visitorsId === parent.id)
+      }
+    }
   })
 })
 
+// Define "RootQuery" type
 const RootQuery = new GraphQLObjectType({
   name: "RootQueryType",
   fields: {
+    // Return "place" by ID
     place: {
       type: PlaceType,
       args: { id: { type: GraphQLID } },
       resolve(parent, args) {
-        return _.find(places, { id: args.id })
+        return places.find(place => place.id === args.id)
       }
     },
+    // Return "visitor" by ID
     visitor: {
       type: VisitorType,
       args: { id: { type: GraphQLID } },
       resolve(parent, args) {
-        return _.find(visitors, { id: args.id })
+        return visitors.find(visitor => visitor.id === args.id)
+      }
+    },
+    // Return all "places"
+    places: {
+      type: new GraphQLList(PlaceType),
+      resolve(parent, args) {
+        return places
+      }
+    },
+    // Return all "visitors"
+    visitors: {
+      type: new GraphQLList(VisitorType),
+      resolve(parent, args) {
+        return visitors
       }
     }
   }
